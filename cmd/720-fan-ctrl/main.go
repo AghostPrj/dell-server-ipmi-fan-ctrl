@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	linuxproc "github.com/c9s/goprocinfo/linux"
 	"github.com/gin-gonic/gin"
 	"github.com/md14454/gosensors"
 	"math"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,14 +39,14 @@ var (
 func main() {
 	var err error
 
-	// _, err = exec.Command("ipmitool", "raw", "0x30", "0x30", "0x01", "0x00").CombinedOutput()
-	// if err != nil {
-	// 	os.Exit(5)
-	// }
-	// _, err = exec.Command("ipmitool", "raw", "0x30", "0x30", "0x02", "0xff", "15").CombinedOutput()
-	// if err != nil {
-	// 	os.Exit(5)
-	// }
+	_, err = exec.Command("ipmitool", "raw", "0x30", "0x30", "0x01", "0x00").CombinedOutput()
+	if err != nil {
+		os.Exit(5)
+	}
+	_, err = exec.Command("ipmitool", "raw", "0x30", "0x30", "0x02", "0xff", "15").CombinedOutput()
+	if err != nil {
+		os.Exit(5)
+	}
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -64,6 +66,8 @@ func main() {
 			result = 0
 			if currentMaxTemp <= 34 {
 				result = 15
+			} else if currentMaxTemp >= 70 {
+				result = 100
 			} else if currentMaxTemp >= 64 {
 				result = 60
 			} else if currentMaxTemp >= 62 {
@@ -77,13 +81,13 @@ func main() {
 				result = 15
 			}
 			if lastPwm != result {
-				// execStrArg := fmt.Sprintf("%d", result)
-				// fmt.Println("new fan pwm: " + execStrArg)
-				// _, err := exec.Command("ipmitool", "raw", "0x30", "0x30", "0x02", "0xff", execStrArg).CombinedOutput()
-				// if err != nil {
-				// 	time.Sleep(time.Second * 5)
-				// 	continue
-				// }
+				execStrArg := fmt.Sprintf("%d", result)
+				fmt.Println("new fan pwm: " + execStrArg)
+				_, err := exec.Command("ipmitool", "raw", "0x30", "0x30", "0x02", "0xff", execStrArg).CombinedOutput()
+				if err != nil {
+					time.Sleep(time.Second * 5)
+					continue
+				}
 				lastPwm = result
 			}
 
