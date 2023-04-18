@@ -130,7 +130,7 @@ func main() {
 
 			context.JSON(http.StatusOK, result)
 		})
-		err = router.Run("0.0.0.0:60002")
+		err = router.Run("0.0.0.0:60001")
 		if err != nil {
 			os.Exit(5)
 		}
