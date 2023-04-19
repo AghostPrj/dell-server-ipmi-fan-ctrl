@@ -86,7 +86,7 @@ func main() {
 
 			lock.Lock()
 			currentMaxTemp = getMaxTemp(tempData)
-			getMaxNvemTemp(tempData)
+			getMaxNvmeTemp(tempData)
 
 			lock.Unlock()
 
@@ -175,7 +175,7 @@ func main() {
 	wg.Wait()
 }
 
-func getMaxNvemTemp(tempData *map[string][]map[string]float64) {
+func getMaxNvmeTemp(tempData *map[string][]map[string]float64) {
 	if nvmeData, ok := (*tempData)["nvme"]; ok {
 		if len(nvmeData) > 0 {
 			nvmeTemp = make([]float64, len(nvmeData))
