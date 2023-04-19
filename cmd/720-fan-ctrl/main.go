@@ -61,6 +61,7 @@ func main() {
 		for true {
 
 			getSystemPowerInfo()
+
 			time.Sleep(time.Second * 9)
 		}
 
@@ -71,8 +72,7 @@ func main() {
 		for true {
 			getSystemInfo()
 			getSystemMemoryInfo()
-
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 5)
 		}
 
 	}()
