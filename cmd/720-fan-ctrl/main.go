@@ -33,6 +33,10 @@ var (
 	memTotal     uint64
 	memUsage     float64
 
+	systemInputVoltage []float64
+	systemInputCurrent []float64
+	systemInputPower   float64
+
 	lock = sync.Mutex{}
 )
 
@@ -49,7 +53,29 @@ func main() {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(4)
+
+	go func() {
+		defer wg.Done()
+
+		for true {
+
+			getSystemPowerInfo()
+			time.Sleep(time.Second * 9)
+		}
+
+	}()
+
+	go func() {
+		defer wg.Done()
+		for true {
+			getSystemInfo()
+			getSystemMemoryInfo()
+
+			time.Sleep(time.Second)
+		}
+
+	}()
 
 	go func() {
 		gosensors.Init()
@@ -61,6 +87,8 @@ func main() {
 			lock.Lock()
 			currentMaxTemp = getMaxTemp(tempData)
 			getMaxNvemTemp(tempData)
+
+			lock.Unlock()
 
 			var result int64
 			result = 0
@@ -91,9 +119,6 @@ func main() {
 				lastPwm = result
 			}
 
-			getSystemInfo()
-			getSystemMemoryInfo()
-			lock.Unlock()
 			time.Sleep(time.Second)
 		}
 	}()
@@ -119,6 +144,10 @@ func main() {
 				MemFree      uint64  `json:"mem_free"`
 				MemAvailable uint64  `json:"mem_available"`
 				MemUsage     float64 `json:"mem_usage"`
+
+				PowerInput        float64   `json:"power_input"`
+				PowerInputVoltage []float64 `json:"power_input_voltage"`
+				PowerInputCurrent []float64 `json:"power_input_current"`
 			}{
 				Temperature:        currentMaxTemp,
 				DutyCycle:          lastPwm,
@@ -130,6 +159,9 @@ func main() {
 				MemFree:            memFree,
 				MemAvailable:       memAvailable,
 				MemUsage:           memUsage,
+				PowerInput:         systemInputPower,
+				PowerInputVoltage:  systemInputVoltage,
+				PowerInputCurrent:  systemInputCurrent,
 			}
 
 			context.JSON(http.StatusOK, result)
@@ -227,10 +259,12 @@ func getSystemInfo() {
 	tmpTotal := nowTotal - lastCpuTotal
 	tmpIdle := nowIdle - lastCpuIdle
 
+	lock.Lock()
 	cpuUsage = math.Trunc((float64(tmpTotal-tmpIdle)/float64(tmpTotal))*10000) / 100
 
 	lastCpuIdle = nowIdle
 	lastCpuTotal = nowTotal
+	lock.Unlock()
 
 }
 func getSystemMemoryInfo() {
@@ -255,7 +289,9 @@ func getSystemMemoryInfo() {
 			tmp = strings.TrimSpace(tmp)
 			parseUint, err := strconv.ParseUint(tmp, 10, 64)
 			if err == nil {
+				lock.Lock()
 				memTotal = parseUint
+				lock.Unlock()
 			}
 			continue
 		}
@@ -267,7 +303,9 @@ func getSystemMemoryInfo() {
 			tmp = strings.TrimSpace(tmp)
 			parseUint, err := strconv.ParseUint(tmp, 10, 64)
 			if err == nil {
+				lock.Lock()
 				memFree = parseUint
+				lock.Unlock()
 			}
 			continue
 		}
@@ -279,12 +317,88 @@ func getSystemMemoryInfo() {
 			tmp = strings.TrimSpace(tmp)
 			parseUint, err := strconv.ParseUint(tmp, 10, 64)
 			if err == nil {
+				lock.Lock()
 				memAvailable = parseUint
+				lock.Unlock()
 			}
 			continue
 		}
 	}
 
+	lock.Lock()
 	memUsage = math.Trunc((float64(memTotal-memFree)/float64(memTotal))*10000) / 100
+	lock.Unlock()
+}
+func getSystemPowerInfo() {
+	output, err := exec.Command("bash", "-c", "ipmitool sensor list 2>&1 | grep -E 'Current|Voltage|Pwr Consumption'").CombinedOutput()
+	if err != nil {
+		return
+	}
+
+	systemInputVoltage = make([]float64, 2)
+	systemInputCurrent = make([]float64, 2)
+	systemInputPower = 0
+
+	outputStr := string(output)
+
+	outputLines := strings.Split(outputStr, "\n")
+	for i := range outputLines {
+
+		line := strings.TrimSpace(outputLines[i])
+
+		if len(line) < 10 {
+			continue
+		}
+		cols := strings.Split(line, "|")
+		if len(cols) < 5 {
+			continue
+		}
+
+		item := strings.TrimSpace(cols[0])
+		val := strings.TrimSpace(cols[1])
+
+		if strings.HasPrefix(item, "Current") {
+			// input current
+			keyPosStr := strings.TrimSpace(strings.ReplaceAll(item, "Current", ""))
+			if len(keyPosStr) > 0 {
+				pos, err := strconv.ParseInt(keyPosStr, 10, 64)
+				if err == nil && pos > 0 && val != "na" {
+					valNum, err := strconv.ParseFloat(val, 64)
+					if err == nil {
+						lock.Lock()
+						systemInputCurrent[pos-1] = math.Trunc(valNum*100) / 100
+						lock.Unlock()
+					}
+				}
+			}
+
+		} else if strings.HasPrefix(item, "Voltage") {
+			// input voltage
+			keyPosStr := strings.TrimSpace(strings.ReplaceAll(item, "Voltage", ""))
+			if len(keyPosStr) > 0 {
+				pos, err := strconv.ParseInt(keyPosStr, 10, 64)
+				if err == nil && pos > 0 && val != "na" {
+					valNum, err := strconv.ParseFloat(val, 64)
+					if err == nil {
+						lock.Lock()
+						systemInputVoltage[pos-1] = math.Trunc(valNum*100) / 100
+						lock.Unlock()
+					}
+				}
+			}
+		} else if item == "Pwr Consumption" {
+			if val != "na" {
+				valNum, err := strconv.ParseFloat(val, 64)
+				if err == nil {
+					lock.Lock()
+					systemInputPower = math.Trunc(valNum*100) / 100
+					lock.Unlock()
+				}
+			}
+		} else {
+			continue
+		}
+
+	}
 
 }
