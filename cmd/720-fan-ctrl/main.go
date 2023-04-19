@@ -254,7 +254,9 @@ func getSystemInfo() {
 	upTime = time.Now().Unix() - stat.BootTime.Unix()
 
 	nowIdle := stat.CPUStatAll.Idle
-	nowTotal := stat.CPUStatAll.User + stat.CPUStatAll.System + stat.CPUStatAll.IOWait + stat.CPUStatAll.Idle
+
+	nowTotal := stat.CPUStatAll.User + stat.CPUStatAll.Nice + stat.CPUStatAll.System + stat.CPUStatAll.Idle +
+		stat.CPUStatAll.IOWait + stat.CPUStatAll.IRQ + stat.CPUStatAll.SoftIRQ
 
 	tmpTotal := nowTotal - lastCpuTotal
 	tmpIdle := nowIdle - lastCpuIdle
