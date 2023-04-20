@@ -94,13 +94,13 @@ func main() {
 			result = 0
 			if currentMaxTemp <= 34 {
 				result = 15
-			} else if currentMaxTemp >= 70 {
+			} else if currentMaxTemp >= 75 {
 				result = 100
-			} else if currentMaxTemp >= 64 {
+			} else if currentMaxTemp >= 72 {
 				result = 60
-			} else if currentMaxTemp >= 62 {
+			} else if currentMaxTemp >= 70 {
 				result = 45
-			} else if currentMaxTemp >= 60 {
+			} else if currentMaxTemp >= 68 {
 				result = 40
 			} else {
 				result = 15 + int64((currentMaxTemp-24)/2)
