@@ -1,0 +1,94 @@
+sensor:
+  - platform: template
+    sensors:
+      r730_temperature:
+        friendly_name: "R730 CPU Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.temperature }}'
+        unit_of_measurement: "°C"
+      r730_fan_duty_cycle:
+        friendly_name: "R730 Fan Duty Cycle"
+        value_template: '{{ states.sensor.r730_status.attributes.duty_cycle }}'
+        unit_of_measurement: "%"
+      r730_cpu_usage:
+        friendly_name: "R730 CPU Usage"
+        value_template: '{{ states.sensor.r730_status.attributes.cpu_usage }}'
+        unit_of_measurement: "%"
+      r730_up_time:
+        friendly_name: "R730 Up Time"
+        value_template: '{{ states.sensor.r730_status.attributes.up_time // 3600 // 24 }}'
+        unit_of_measurement: "day"
+      r730_mem_usage:
+        friendly_name: "R730 Memory Usage"
+        value_template: '{{ states.sensor.r730_status.attributes.mem_usage }}'
+        unit_of_measurement: "%"
+      r730_mem_available:
+        friendly_name: "R730 Memory Available"
+        value_template: '{{ states.sensor.r730_status.attributes.mem_available // 1024 }}'
+        unit_of_measurement: "MB"
+      r730_cpu_core_0_temperature:
+        friendly_name: "R730 CPU0 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_core_temperature[0] }}'
+        unit_of_measurement: "°C"
+      r730_cpu_core_1_temperature:
+        friendly_name: "R730 CPU1 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_core_temperature[1] }}'
+        unit_of_measurement: "°C"
+      r730_nvme_0_temperature:
+        friendly_name: "R730 NVME0 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_nvme_temperature[0] }}'
+        unit_of_measurement: "°C"
+      r730_nvme_1_temperature:
+        friendly_name: "R730 NVME1 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_nvme_temperature[1] }}'
+        unit_of_measurement: "°C"
+      r730_nvme_2_temperature:
+        friendly_name: "R730 NVME2 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_nvme_temperature[2] }}'
+        unit_of_measurement: "°C"
+      r730_nvme_3_temperature:
+        friendly_name: "R730 NVME3 Temperature"
+        value_template: '{{ states.sensor.r730_status.attributes.per_nvme_temperature[3] }}'
+        unit_of_measurement: "°C"
+      r730_power_input:
+        friendly_name: "R730 Power Input"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input }}'
+        unit_of_measurement: "W"
+      r730_power_input_voltage_1:
+        friendly_name: "R730 Power Input Voltage 1"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input_voltage[0] }}'
+        unit_of_measurement: "V"
+      r730_power_input_voltage_2:
+        friendly_name: "R730 Power Input Voltage 2"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input_voltage[1] }}'
+        unit_of_measurement: "V"
+      r730_power_input_current_1:
+        friendly_name: "R730 Power Input Current 1"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input_current[0] }}'
+        unit_of_measurement: "A"
+      r730_power_input_current_2:
+        friendly_name: "R730 Power Input Current 2"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input_current[1] }}'
+        unit_of_measurement: "A"
+      r730_power_input_current:
+        friendly_name: "R730 Power Input Current"
+        value_template: '{{ states.sensor.r730_status.attributes.power_input_current[0] + states.sensor.r730_status.attributes.power_input_current[1] }}'
+        unit_of_measurement: "A"
+
+  - platform: rest
+    name: r730 status
+    resource: "http://ip_address_or_domain_of_your_server:60001/info"
+    value_template: '{{ value_json.up_time }}'
+    json_attributes:
+      - temperature
+      - duty_cycle
+      - per_core_temperature
+      - per_nvme_temperature
+      - cpu_usage
+      - up_time
+      - mem_total
+      - mem_free
+      - mem_available
+      - mem_usage
+      - power_input
+      - power_input_voltage
+      - power_input_current
